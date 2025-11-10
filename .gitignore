@@ -3,6 +3,8 @@
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
 **/.vscode/
+**/*.meta
+**/*.DS_Store
 .utmp/
 /[Ll]ibrary/
 /[Tt]emp/

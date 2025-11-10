@@ -16,31 +16,20 @@ This project combines a Unity scene with Python-based MediaPipe pose estimation.
 1. **Clone the repository**
    ```bash
    git clone https://github.com/DimitriosGkegkas/unity-human-pose-controller.git
-   cd mediapipe-unity-pose-streamer
+   cd unity-human-pose-controller
    ```
 2. **Open the Unity project**
    - Launch Unity Hub and add the cloned folder.
    - Open the project; Unity will import assets (first launch can take a few minutes).
-3. **Configure Unity editor settings** (recommended for version control)
-   - `Edit → Project Settings → Editor`
-   - Set `Version Control` to `Visible Meta Files`.
-   - Set `Asset Serialization` to `Force Text`.
+
 
 ### Python Backend Setup
 The Python scripts live in `Assets/backend/`. They require `mediapipe` and `opencv-python`.
 
-Create and activate a virtual environment (recommended):
-```bash
-python3 -m venv .venv
-source .venv/bin/activate    # macOS/Linux
-# or
-.venv\Scripts\activate      # Windows PowerShell
-```
-
 Install dependencies:
 ```bash
 pip install --upgrade pip
-pip install mediapipe==0.10.8 opencv-python numpy
+pip install mediapipe opencv-python numpy
 ```
 
 > **macOS (Apple Silicon) note:** If the default wheels fail, install the universal2 builds via `pip install mediapipe-silicon` or use Rosetta with an x86_64 Python 3.9 environment.
@@ -63,5 +52,6 @@ pip install mediapipe==0.10.8 opencv-python numpy
 
 ### Contributing
 Feel free to open issues or pull requests for bug fixes, improvements, or extended tracking features.
+
 
 

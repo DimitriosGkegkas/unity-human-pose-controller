@@ -1,0 +1,60 @@
+{
+  "environment": {
+    "executable": "/Library/Developer/CommandLineTools/usr/bin/python3",
+    "prefix": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9",
+    "version": "3.9.6.final.0",
+    "is64Bit": true,
+    "symlinks": [
+      "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3",
+      "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9",
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      "/Library/Developer/CommandLineTools/usr/bin/python3.9"
+    ]
+  },
+  "symlinks": [
+    [
+      "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3",
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      },
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      }
+    ],
+    [
+      "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9",
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      },
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      }
+    ],
+    [
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      },
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      }
+    ],
+    [
+      "/Library/Developer/CommandLineTools/usr/bin/python3.9",
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      },
+      {
+        "secs_since_epoch": 1747117357,
+        "nanos_since_epoch": 0
+      }
+    ]
+  ]
+}

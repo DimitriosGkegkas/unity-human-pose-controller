@@ -7,32 +7,18 @@ public class BoneMapping
     [Tooltip("The bone transform to rotate")]
     public Transform boneTransform;
     
-    
-    [Tooltip("Position index of the parent joint (where bone starts)")]
-    public int parentJointIndex;
-
-    [Tooltip("Position index of the joint")]
-    public int jointIndex;
-    
-    [Tooltip("Position index of the child joint (where bone ends)")]
-    public int childJointIndex;
-    
-    [Tooltip("Reference direction in local space that the bone points in its default pose (usually Vector3.up or Vector3.forward)")]
-    public Vector3 localReferenceDirection = Vector3.up;
+    [Tooltip("Name of the arm segment from the payload (e.g., left_upper_arm)")]
+    public string armSegmentName;
 }
 
 public class RigPositionReceiver : MonoBehaviour
 {
     [Header("Bone Mapping")]
-    [Tooltip("Map bone transforms to their corresponding position indices in the received data")]
+    [Tooltip("Map bone transforms to their corresponding arm segment names in the payload")]
     public List<BoneMapping> boneMappings = new List<BoneMapping>();
     
-    [Header("Coordinate System")]
-    [Tooltip("Adjust if pose estimation uses a different coordinate system")]
-    public Vector3 coordinateSystemAdjustment = Vector3.one;
-    
     [Header("Settings")]
-    public bool enableSmoothing = false;
+    public bool enableSmoothing = true;
     [Range(0.1f, 1f)]
     public float smoothingFactor = 0.5f;
 
@@ -57,78 +43,57 @@ public class RigPositionReceiver : MonoBehaviour
 
     void Update()
     {
-        // Get positions from MyListener
-        if (MyListener.Instance != null && MyListener.Instance.HasPositions())
+        if (MyListener.Instance != null &&
+            MyListener.Instance.TryGetArmSegments(out var armSegments) &&
+            armSegments != null && armSegments.Count > 0)
         {
-            Vector3[] positions = MyListener.Instance.GetLatestPositions();
-            if (positions != null && positions.Length > 0)
-            {
-                ApplyRotationsToRig(positions);
-            }
+            ApplyRotationsToRig(armSegments);
         }
     }
 
-    public void ApplyRotationsToRig(Vector3[] positions)
+    public void ApplyRotationsToRig(Dictionary<string, MyListener.ArmSegmentData> armSegments)
     {
+        if (armSegments == null || armSegments.Count == 0)
+        {
+            return;
+        }
+
         foreach (var mapping in boneMappings)
         {
-            if (mapping.boneTransform == null) continue;
-            if (mapping.parentJointIndex < 0 || mapping.parentJointIndex >= positions.Length) continue;
-            if (mapping.jointIndex < 0 || mapping.jointIndex >= positions.Length) continue;
-            if (mapping.childJointIndex < 0 || mapping.childJointIndex >= positions.Length) continue;
-
-            // Validate localReferenceDirection
-            if (mapping.localReferenceDirection.magnitude < 0.001f)
+            if (mapping.boneTransform == null)
             {
-                Debug.LogError($"[RigPositionReceiver] localReferenceDirection is invalid for {mapping.boneTransform.name}! Set it to Vector3.up, Vector3.down, or Vector3.forward in Inspector.");
                 continue;
             }
 
-            // Get parent and child joint positions from pose estimation
-            Vector3 parentJointPos = positions[mapping.parentJointIndex];
-            Vector3 jointPos = positions[mapping.jointIndex];
-            Vector3 childJointPos = positions[mapping.childJointIndex];
+            if (string.IsNullOrWhiteSpace(mapping.armSegmentName))
+            {
+                continue;
+            }
 
-            // Apply coordinate system adjustment
-            parentJointPos = new Vector3(
-                parentJointPos.x * coordinateSystemAdjustment.x,
-                parentJointPos.y * coordinateSystemAdjustment.y,
-                parentJointPos.z * coordinateSystemAdjustment.z
-            );
-            jointPos = new Vector3(
-                jointPos.x * coordinateSystemAdjustment.x,
-                jointPos.y * coordinateSystemAdjustment.y,
-                jointPos.z * coordinateSystemAdjustment.z
-            );
-            childJointPos = new Vector3(
-                childJointPos.x * coordinateSystemAdjustment.x,
-                childJointPos.y * coordinateSystemAdjustment.y,
-                childJointPos.z * coordinateSystemAdjustment.z
-            );
+            if (!armSegments.TryGetValue(mapping.armSegmentName, out var segment))
+            {
+                continue;
+            }
 
-            // Calculate the direction from parent to child (bone direction in pose estimation space)
-            Vector3 targetBoneDirection = (childJointPos - jointPos);
-            targetBoneDirection.z = 0;
-            targetBoneDirection.Normalize();
-            
-            Vector3 refBoneDirection = (jointPos - parentJointPos);
-            refBoneDirection.z = 0;
-            refBoneDirection.Normalize();
 
-            Quaternion targetRotation = Quaternion.FromToRotation(refBoneDirection, targetBoneDirection);
-            Debug.Log($"Target rotation: {targetRotation.eulerAngles}");
+            Quaternion targetRotation = new Quaternion();
+            Vector3 targetDirectionParentLocal = mapping.boneTransform.parent.InverseTransformVector(segment.Direction);
+            targetRotation.SetFromToRotation(new Vector3(0, 1, 0), targetDirectionParentLocal);
 
-            targetRotation.x = targetRotation.z * Mathf.Sign(mapping.localReferenceDirection.x);
-            targetRotation.z = 0;
-            targetRotation.y = 0;
+            if (enableSmoothing && currentRotations.TryGetValue(mapping.boneTransform, out var current))
+            {
+                targetRotation = Quaternion.Slerp(current, targetRotation, smoothingFactor);
+            }
+
+
             mapping.boneTransform.localRotation = targetRotation;
+            currentRotations[mapping.boneTransform] = targetRotation;
         }
     }
 
-    // Public method to manually apply positions
-    public void SetPositions(Vector3[] positions)
+    public void SetArmSegments(Dictionary<string, MyListener.ArmSegmentData> armSegments)
     {
-        ApplyRotationsToRig(positions);
+        ApplyRotationsToRig(armSegments);
     }
 }
 

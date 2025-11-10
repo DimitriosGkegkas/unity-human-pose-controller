@@ -1,0 +1,96 @@
+{
+  "version": 3,
+  "requesterUsername": "",
+  "responderUsername": "",
+  "initialLocation": "panel",
+  "requests": [
+    {
+      "requestId": "request_68bcd005-95a5-4d87-bc8b-a98f784a6b08",
+      "message": {
+        "text": "ok lets include tha rotation of the head in this calcuations",
+        "parts": [
+          {
+            "range": {
+              "start": 0,
+              "endExclusive": 60
+            },
+            "editorRange": {
+              "startLineNumber": 1,
+              "startColumn": 1,
+              "endLineNumber": 1,
+              "endColumn": 61
+            },
+            "text": "ok lets include tha rotation of the head in this calcuations",
+            "kind": "text"
+          }
+        ]
+      },
+      "variableData": {
+        "variables": [
+          {
+            "kind": "file",
+            "id": "vscode.implicit.file",
+            "name": "file:arm_rotation_calculator.py",
+            "value": {
+              "$mid": 1,
+              "fsPath": "/Users/dimitrisgkegkas/Work/Enneas/MediaPipeUnityPlugin/Test1/Assets/backend/arm_rotation_calculator.py",
+              "external": "file:///Users/dimitrisgkegkas/Work/Enneas/MediaPipeUnityPlugin/Test1/Assets/backend/arm_rotation_calculator.py",
+              "path": "/Users/dimitrisgkegkas/Work/Enneas/MediaPipeUnityPlugin/Test1/Assets/backend/arm_rotation_calculator.py",
+              "scheme": "file"
+            },
+            "modelDescription": "User's active file"
+          }
+        ]
+      },
+      "response": [
+        {
+          "value": "You need to set up GitHub Copilot and be signed in to use Chat.",
+          "isTrusted": false,
+          "supportThemeIcons": false,
+          "supportHtml": false
+        }
+      ],
+      "responseId": "response_e1751c6e-eded-4aba-a6e0-241d1d7ba155",
+      "result": {},
+      "responseMarkdownInfo": [],
+      "followups": [],
+      "isCanceled": false,
+      "agent": {
+        "id": "setup.chat",
+        "name": "GitHub Copilot",
+        "isDefault": true,
+        "isCore": true,
+        "modes": [
+          "ask"
+        ],
+        "slashCommands": [],
+        "disambiguation": [],
+        "locations": [
+          "panel"
+        ],
+        "metadata": {
+          "helpTextPrefix": {
+            "value": "You need to set up GitHub Copilot and be signed in to use Chat.",
+            "isTrusted": false,
+            "supportThemeIcons": false,
+            "supportHtml": false
+          }
+        },
+        "description": "Ask a question.",
+        "extensionId": {
+          "value": "nullExtensionDescription",
+          "_lower": "nullextensiondescription"
+        },
+        "extensionDisplayName": "Null Extension Description",
+        "extensionPublisherId": "vscode"
+      },
+      "contentReferences": [],
+      "codeCitations": [],
+      "timestamp": 1762521939948
+    }
+  ],
+  "sessionId": "0258002b-de6a-4bcb-a42e-476c70518f53",
+  "creationDate": 1762521911481,
+  "isImported": false,
+  "lastMessageDate": 1762521939948
+}

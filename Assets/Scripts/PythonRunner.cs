@@ -59,10 +59,10 @@ public class PythonRunner : MonoBehaviour
             process.EnableRaisingEvents = true;
             process.OutputDataReceived += (_, e) =>
             {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Debug.Log($"[Python stdout] {e.Data}");
-                }
+                // if (!string.IsNullOrEmpty(e.Data))
+                // {
+                //     Debug.Log($"[Python stdout] {e.Data}");
+                // }
             };
             process.ErrorDataReceived += (_, e) =>
             {
