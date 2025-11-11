@@ -9,6 +9,7 @@ import numpy as np
 from numpy.linalg import norm
 
 ROTATION_180_X = np.diag([1.0, -1.0, -1.0])
+ROTATION_180_Y = np.diag([-1.0, 1.0, -1.0])
 FLIP_X = np.diag([-1.0, 1.0, 1.0])
 
 
@@ -61,10 +62,24 @@ class ArmRotationCalculator:
         self._previous_directions.clear()
 
     def compute(self, body_result) -> List[ArmSegmentRotation]:
-        if not body_result or not body_result.world_landmarks:
+        landmarks = getattr(body_result, "landmarks_world", None)
+        if landmarks is None:
             return []
 
-        landmarks = body_result.world_landmarks.landmark
+        if hasattr(landmarks, "landmark"):
+            landmarks = landmarks.landmark
+
+        if landmarks is None:
+            return []
+
+        try:
+            if len(landmarks) == 0:
+                return []
+        except TypeError:
+            landmarks = list(landmarks)
+            if len(landmarks) == 0:
+                return []
+
         segment_rotations: List[ArmSegmentRotation] = []
 
         for config in self.SEGMENTS:
@@ -78,8 +93,7 @@ class ArmRotationCalculator:
             if direction_norm < 1e-6:
                 continue
             direction_unit = direction / direction_norm
-            direction_unit = ROTATION_180_X @ direction_unit
-            direction_unit = FLIP_X @ direction_unit
+            direction_unit = ROTATION_180_Y @ direction_unit
 
             segment_rotations.append(
                 ArmSegmentRotation(
@@ -96,10 +110,26 @@ class ArmRotationCalculator:
 
     @staticmethod
     def _landmark_to_array(landmarks, index: int) -> Optional[np.ndarray]:
-        if index < 0 or index >= len(landmarks):
+        try:
+            length = len(landmarks)
+        except TypeError:
+            landmarks = list(landmarks)
+            length = len(landmarks)
+
+        if index < 0 or index >= length:
             return None
+
         landmark = landmarks[index]
-        return np.array([landmark.x, landmark.y, landmark.z], dtype=np.float64)
+
+        if hasattr(landmark, "x"):
+            x, y, z = landmark.x, landmark.y, landmark.z
+        else:
+            try:
+                x, y, z = landmark[0], landmark[1], landmark[2]
+            except (TypeError, IndexError):
+                return None
+
+        return np.array([x, y, z], dtype=np.float64)
 
     def _apply_low_pass(
         self, key: str, direction: np.ndarray

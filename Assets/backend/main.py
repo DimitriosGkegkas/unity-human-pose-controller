@@ -13,35 +13,42 @@ from arm_rotation_calculator import ArmRotationCalculator
 
 def main() -> None:
     frame_provider = RealSenseFrameProvider()
-    body_pose = BodyPoseEstimator()
-    hand_pose = HandPoseEstimator()
+
+    # Body pose estimation
+    body_pose = BodyPoseEstimator(
+        intrinsics=frame_provider.get_intrinsics()
+    )
     body_gesture_recognizer = BodyGestureRecognizer()
+    arm_rotation_calculator = ArmRotationCalculator()
+
+    # Hand pose estimation
+    hand_pose = HandPoseEstimator()
+    hand_motion_analyzer = HandMotionAnalyzer(
+        intrinsics=frame_provider.get_intrinsics()
+        )
+
+    # Formatting and sending
     formatter = PoseFormatter()
     sender = PoseSender()
     visualizer = PoseVisualizer()
 
-    arm_rotation_calculator = ArmRotationCalculator()
-    hand_motion_analyzer = HandMotionAnalyzer()
-    frame_index = 0
-
     try:
         while True:
-            frame, depth = frame_provider.get_frame()
-            if frame is None:
+            frame_rgb, frame_depth = frame_provider.get_frame()
+            if frame_rgb is None:
                 continue
 
-            body_result = body_pose.get_body_pose(frame)
+            body_result = body_pose.get_body_pose(frame_rgb, frame_depth)
             arm_segments = arm_rotation_calculator.compute(body_result)
             body_gesture = body_gesture_recognizer.get_body_gesture(body_result)
 
-            hand_result = hand_pose.get_hand_pose(frame)
-            hand_states = hand_motion_analyzer.analyze(hand_result)
+            hand_result = hand_pose.get_hand_pose(frame_rgb)
+            hand_states = hand_motion_analyzer.analyze(hand_result, frame_depth)
             
-
-            print(hand_states)
+            print(arm_segments[0])
 
             payload = formatter.format(
-                frame.shape,
+                frame_rgb.shape,
                 body_result,
                 hand_result,
                 body_gesture,
@@ -49,10 +56,9 @@ def main() -> None:
                 hand_states=hand_states,
             )
             sender.send(payload)
-            frame_index += 1
 
-            visualizer.draw(frame, body_result, hand_result)
-            if not visualizer.show(frame):
+            visualizer.draw(frame_rgb, body_result, hand_result)
+            if not visualizer.show(frame_rgb, frame_depth):
                 break
     except KeyboardInterrupt:
         pass

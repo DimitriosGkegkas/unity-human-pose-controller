@@ -26,10 +26,19 @@ class RealSenseFrameProvider:
 
         # Pipeline setup
         self._pipeline = rs.pipeline()
+        self._pipeline_profile: Optional[rs.pipeline_profile] = None
+        self._pipeline_started = False
         config = rs.config()
         config.enable_stream(rs.stream.depth, width, height, rs.format.z16, fps)
         config.enable_stream(rs.stream.color, width, height, rs.format.bgr8, fps)
-        self._pipeline_profile = self._pipeline.start(config)
+        try:
+            self._pipeline_profile = self._pipeline.start(config)
+        except Exception:
+            self._pipeline = None
+            self._pipeline_profile = None
+            raise
+        else:
+            self._pipeline_started = True
 
         # Align depth to color stream
         self._align = rs.align(rs.stream.color)
@@ -51,6 +60,10 @@ class RealSenseFrameProvider:
             color_image (BGR, uint8, HxWx3)
             depth_image_m (float32, HxW)  -- depth in meters
         """
+
+        if self._pipeline is None or not self._pipeline_started:
+            print("Frame read skipped: RealSense pipeline not started.")
+            return None
 
         try:
             frames = self._pipeline.wait_for_frames()
@@ -96,9 +109,12 @@ class RealSenseFrameProvider:
         return stream.get_intrinsics()
 
     def release(self) -> None:
-        if self._pipeline is not None:
+        if self._pipeline is not None and self._pipeline_started:
             self._pipeline.stop()
-            self._pipeline = None
+
+        self._pipeline = None
+        self._pipeline_profile = None
+        self._pipeline_started = False
 
     def __del__(self) -> None:
         self.release()
