@@ -16,15 +16,12 @@ class PoseFormatter:
         frame_shape,
         body_result,
         hand_result,
-        metrics,
         body_gesture: str,
         arm_segments: Optional[List[ArmSegmentRotation]] = None,
         hand_states: Optional[List[HandState]] = None,
     ) -> str:
         body_section = self._format_body(frame_shape, body_result)
-        hand_section = self._format_hands(frame_shape, hand_result)
         hand_state_section = self._format_hand_states(hand_states)
-        metrics_section = f"metrics:body={metrics.body_landmark_count},hands={metrics.hand_landmark_count}"
         gesture_section = f"gesture:{body_gesture}"
         arm_section = self._format_arm_segments(arm_segments)
 
@@ -32,9 +29,7 @@ class PoseFormatter:
             part
             for part in [
                 body_section,
-                hand_section,
                 hand_state_section,
-                metrics_section,
                 gesture_section,
                 arm_section,
             ]
@@ -64,35 +59,16 @@ class PoseFormatter:
 
         return ""
 
-    def _format_hands(self, frame_shape, hand_result) -> str:
-        if not hand_result or not hand_result.normalized:
-            return ""
-
-        height, width = frame_shape[:2]
-        hands_payload: List[str] = []
-        for hand_idx, hand_landmarks in enumerate(hand_result.normalized):
-            serialized = ";".join(
-                f"{idx}:{landmark.x * width:.1f},{landmark.y * height:.1f},{landmark.z:.5f}"
-                for idx, landmark in enumerate(hand_landmarks.landmark)
-            )
-            hands_payload.append(f"hand{hand_idx}:{serialized}")
-
-        if not hands_payload:
-            return ""
-
-        return "hands:" + "|".join(hands_payload)
-
     def _format_hand_states(self, hand_states: Optional[List[HandState]]) -> str:
         if not hand_states:
             return ""
 
         payload: List[str] = []
         for state in hand_states:
-            x, y = state.position
-            pointing = 1 if state.is_pointing else 0
+            x, y, z = state.position
             gesture = state.gesture or "none"
             payload.append(
-                f"{state.handedness}:x={x:.1f},y={y:.1f},dir={state.direction},pointing={pointing},gesture={gesture}"
+                f"{state.handedness}:x={x:.1f},y={y:.1f},dir={state.direction},gesture={gesture}"
             )
 
         return "hand_states:" + "|".join(payload)

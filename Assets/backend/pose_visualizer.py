@@ -40,16 +40,6 @@ class PoseVisualizer:
                     1,
                 )
 
-        if hand_result and hand_result.normalized:
-            for hand_landmarks in hand_result.normalized:
-                self._drawing_utils.draw_landmarks(
-                    frame,
-                    hand_landmarks,
-                    mp.solutions.hands.HAND_CONNECTIONS,
-                    landmark_drawing_spec=self._drawing_styles.get_default_hand_landmarks_style(),
-                    connection_drawing_spec=self._drawing_styles.get_default_hand_connections_style(),
-                )
-
     def show(self, frame) -> bool:
         """Display frame and return whether the loop should continue."""
         if frame is None:

@@ -23,10 +23,21 @@ class FrameProvider:
             return None
         return frame
 
+    def get_intrinsics(self):
+        stream = (
+            self._pipeline_profile
+            .get_stream(rs.stream.color)
+            .as_video_stream_profile()
+        )
+        return stream.get_intrinsics()
+
+
     def release(self) -> None:
         if self._capture is not None:
             self._capture.release()
             self._capture = None
+
+            
 
     def __del__(self) -> None:
         self.release()
