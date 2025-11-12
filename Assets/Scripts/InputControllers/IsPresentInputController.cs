@@ -4,14 +4,16 @@ namespace InputControllers
 {
     public static class IsPresentInputController
     {
+        private static readonly object payloadSync = new object();
+        private static bool isSubscribed;
+        private static MyListener.PosePayload latestPayload;
+
         public static bool IsPresent()
         {
-            if (MyListener.Instance == null)
-            {
-                return false;
-            }
+            EnsureSubscribed();
 
-            if (!MyListener.Instance.TryGetLatestPayload(out var payload) || payload == null)
+            var payload = GetLatestPayload();
+            if (payload == null)
             {
                 return false;
             }
@@ -27,6 +29,33 @@ namespace InputControllers
                 payload.Metrics.HandLandmarkCount > 0;
 
             return hasBodyData && hasHandData;
+        }
+
+        private static void EnsureSubscribed()
+        {
+            if (isSubscribed)
+            {
+                return;
+            }
+
+            MyListener.OnNewPosePayload += HandlePayload;
+            isSubscribed = true;
+        }
+
+        private static void HandlePayload(MyListener.PosePayload payload)
+        {
+            lock (payloadSync)
+            {
+                latestPayload = payload;
+            }
+        }
+
+        private static MyListener.PosePayload GetLatestPayload()
+        {
+            lock (payloadSync)
+            {
+                return latestPayload;
+            }
         }
     }
 }

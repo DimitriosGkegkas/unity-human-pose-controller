@@ -27,7 +27,7 @@ public class PoseDetector : MonoBehaviour
 
     [Header("Raised Hand Detection")]
     [Tooltip("How high above shoulder the wrist needs to be")]
-    public float handRaisedHeightThreshold = 0.2f;
+    public float handRaisedHeightThreshold = 0.1f;
     
     [Tooltip("How low below shoulder the wrist needs to be")]
     public float handDownHeightThreshold = -0.1f;
@@ -73,17 +73,36 @@ public class PoseDetector : MonoBehaviour
         UpdateUI(DetectedPose.None);
     }
 
-    void Update()
+    private Vector3[] latestPositions;
+
+    void OnEnable()
     {
-        // Get positions from MyListener
-        if (MyListener.Instance != null && MyListener.Instance.HasPositions())
+        MyListener.OnNewPosePayload += HandlePayload;
+    }
+
+    void OnDisable()
+    {
+        MyListener.OnNewPosePayload -= HandlePayload;
+    }
+
+    void HandlePayload(MyListener.PosePayload payload)
+    {
+        if (payload == null)
         {
-            Vector3[] positions = MyListener.Instance.GetLatestPositions();
-            if (positions != null && positions.Length > 24) // MediaPipe has 33 landmarks, we need at least 24
-            {
-                DetectPoses(positions);
-            }
+            return;
         }
+
+        Vector3[] positions = payload.BodyWorld != null && payload.BodyWorld.Length > 0
+            ? payload.BodyWorld
+            : payload.BodyImage;
+
+        if (positions == null || positions.Length <= rightWristIndex)
+        {
+            return;
+        }
+
+        latestPositions = (Vector3[])positions.Clone();
+        DetectPoses(latestPositions);
     }
 
     void DetectPoses(Vector3[] positions)
@@ -282,18 +301,14 @@ public class PoseDetector : MonoBehaviour
     void OnGUI()
     {
         // Debug information
-        if (MyListener.Instance != null && MyListener.Instance.HasPositions())
+        if (latestPositions != null && latestPositions.Length > 24)
         {
-            Vector3[] positions = MyListener.Instance.GetLatestPositions();
-            if (positions != null && positions.Length > 24)
-            {
-                GUILayout.BeginArea(new Rect(10, 10, 300, 200));
-                GUILayout.Label($"Current Pose: {currentPose}");
-                GUILayout.Label($"Confirmed Pose: {confirmedPose}");
-                GUILayout.Label($"Frame Count: {poseFrameCounter[currentPose]}/{requiredConsecutiveFrames}");
-                GUILayout.Label($"Total Landmarks: {positions.Length}");
-                GUILayout.EndArea();
-            }
+            GUILayout.BeginArea(new Rect(10, 10, 300, 200));
+            GUILayout.Label($"Current Pose: {currentPose}");
+            GUILayout.Label($"Confirmed Pose: {confirmedPose}");
+            GUILayout.Label($"Frame Count: {poseFrameCounter[currentPose]}/{requiredConsecutiveFrames}");
+            GUILayout.Label($"Total Landmarks: {latestPositions.Length}");
+            GUILayout.EndArea();
         }
     }
 }

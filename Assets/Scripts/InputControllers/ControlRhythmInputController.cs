@@ -10,6 +10,9 @@ namespace InputControllers
 
         private static readonly List<string> DirectionHistory = new List<string>(HistoryLimit);
         private static readonly Dictionary<string, int> DirectionTotals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private static readonly object payloadSync = new object();
+        private static bool isSubscribed;
+        private static MyListener.PosePayload latestPayload;
 
         private static readonly (string Name, string[] Sequence)[] RhythmPatterns =
         {
@@ -27,14 +30,10 @@ namespace InputControllers
 
         public static bool IsControllingRhythm()
         {
-            if (MyListener.Instance == null)
-            {
-                CurrentRhythm = null;
-                return false;
-            }
+            EnsureSubscribed();
 
-            if (!MyListener.Instance.TryGetLatestPayload(out var payload) ||
-                payload?.HandStates == null ||
+            var payload = GetLatestPayload();
+            if (payload?.HandStates == null ||
                 payload.HandStates.Count == 0)
             {
                 CurrentRhythm = null;
@@ -187,6 +186,33 @@ namespace InputControllers
             }
 
             return false;
+        }
+
+        private static void EnsureSubscribed()
+        {
+            if (isSubscribed)
+            {
+                return;
+            }
+
+            MyListener.OnNewPosePayload += HandlePayload;
+            isSubscribed = true;
+        }
+
+        private static void HandlePayload(MyListener.PosePayload payload)
+        {
+            lock (payloadSync)
+            {
+                latestPayload = payload;
+            }
+        }
+
+        private static MyListener.PosePayload GetLatestPayload()
+        {
+            lock (payloadSync)
+            {
+                return latestPayload;
+            }
         }
     }
 }

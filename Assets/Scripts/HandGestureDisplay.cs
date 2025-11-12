@@ -26,15 +26,19 @@ public class HandGestureDisplay : MonoBehaviour
         UpdateDisplayWaiting();
     }
 
-    void Update()
+    void OnEnable()
     {
-        if (MyListener.Instance == null)
-        {
-            UpdateDisplayWaiting("Waiting for MyListener...");
-            return;
-        }
+        MyListener.OnNewPosePayload += HandlePayload;
+    }
 
-        if (!MyListener.Instance.TryGetLatestPayload(out var payload))
+    void OnDisable()
+    {
+        MyListener.OnNewPosePayload -= HandlePayload;
+    }
+
+    private void HandlePayload(MyListener.PosePayload payload)
+    {
+        if (payload == null)
         {
             UpdateDisplayWaiting("Waiting for gesture data...");
             return;

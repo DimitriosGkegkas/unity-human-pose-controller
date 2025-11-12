@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -19,6 +20,9 @@ public class MyListener : MonoBehaviour
     // Thread-safe payload data accessible to other scripts
     private PosePayload latestPayload;
     private readonly object payloadLock = new object();
+    private volatile bool payloadDirty;
+
+    public static event Action<PosePayload> OnNewPosePayload;
 
     public struct PoseMetrics
     {
@@ -141,10 +145,7 @@ public class MyListener : MonoBehaviour
                 PosePayload payload = ParsePayload(dataReceived);
                 if (payload != null)
                 {
-                    lock (payloadLock)
-                    {
-                        latestPayload = payload;
-                    }
+                    MarkPayloadUpdated(payload);
 
                     if (payload.ArmSegments.Count > 0)
                     {
@@ -156,6 +157,28 @@ public class MyListener : MonoBehaviour
         catch (System.Exception e)
         {
             Debug.LogError($"[MyListener] Connection error: {e.Message}");
+        }
+    }
+
+    void Update()
+    {
+        PosePayload payloadToDispatch = null;
+
+        if (payloadDirty)
+        {
+            lock (payloadLock)
+            {
+                if (payloadDirty && latestPayload != null)
+                {
+                    payloadToDispatch = latestPayload.DeepCopy();
+                    payloadDirty = false;
+                }
+            }
+        }
+
+        if (payloadToDispatch != null)
+        {
+            OnNewPosePayload?.Invoke(payloadToDispatch);
         }
     }
 
@@ -228,6 +251,15 @@ public class MyListener : MonoBehaviour
 
             payload = latestPayload.DeepCopy();
             return true;
+        }
+    }
+
+    private void MarkPayloadUpdated(PosePayload payload)
+    {
+        lock (payloadLock)
+        {
+            latestPayload = payload;
+            payloadDirty = true;
         }
     }
 
