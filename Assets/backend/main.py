@@ -45,7 +45,6 @@ def main() -> None:
             hand_result = hand_pose.get_hand_pose(frame_rgb)
             hand_states = hand_motion_analyzer.analyze(hand_result, frame_depth)
             
-            print(arm_segments[0])
 
             payload = formatter.format(
                 frame_rgb.shape,
