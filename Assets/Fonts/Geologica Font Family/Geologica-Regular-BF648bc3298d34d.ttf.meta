@@ -1,0 +1,35 @@
+fileFormatVersion: 2
+guid: 0a0f497ea405fbf45a12800b954ccc7e
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - Geologica
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: c3e285377d2ff79428a1ee477c1138d2, type: 3}
+  - {fileID: 12800000, guid: 09915a9705e2bf74cb5e9c8cf801f6cd, type: 3}
+  - {fileID: 12800000, guid: 84a3ea3edb1c2cc44b754c2320a4f958, type: 3}
+  - {fileID: 12800000, guid: 4233ac3de59898846bde7df012e763c6, type: 3}
+  - {fileID: 12800000, guid: 4440f5a27e3a5ce449cf90c6b834b17c, type: 3}
+  - {fileID: 12800000, guid: 32899b0dd9b921d489d5551a55e08495, type: 3}
+  - {fileID: 12800000, guid: d00cd6c0bc6f38245a27783908814e1e, type: 3}
+  - {fileID: 12800000, guid: 68de0707cfcd87d42a14e964477b7e8b, type: 3}
+  - {fileID: 12800000, guid: 53d3171de07f77540bea4b184258e1fc, type: 3}
+  - {fileID: 12800000, guid: 80e52029fdd650947ab18ff1925c68f2, type: 3}
+  - {fileID: 12800000, guid: 58582ab6949a1c04d81a09e90efeb193, type: 3}
+  - {fileID: 12800000, guid: 5371bcf3f60fc7f429124b2cb1e6d688, type: 3}
+  - {fileID: 12800000, guid: 76d45983454070543b78c7b844fa8b51, type: 3}
+  - {fileID: 12800000, guid: 941fd287e2681aa489afb34945f4c631, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
