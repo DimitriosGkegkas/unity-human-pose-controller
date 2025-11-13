@@ -54,6 +54,7 @@ public class PoseDetector : MonoBehaviour
     private DetectedPose currentPose = DetectedPose.None;
     private Dictionary<DetectedPose, int> poseFrameCounter = new Dictionary<DetectedPose, int>();
     private DetectedPose confirmedPose = DetectedPose.None;
+    private int lastPayloadVersion = -1;
 
     void Start()
     {
@@ -75,23 +76,29 @@ public class PoseDetector : MonoBehaviour
 
     private Vector3[] latestPositions;
 
-    void OnEnable()
+    void Update()
     {
-        MyListener.OnNewPosePayload += HandlePayload;
-    }
-
-    void OnDisable()
-    {
-        MyListener.OnNewPosePayload -= HandlePayload;
-    }
-
-    void HandlePayload(MyListener.PosePayload payload)
-    {
-        if (payload == null)
+        if (MyListener.Instance == null)
         {
             return;
         }
 
+        if (!MyListener.Instance.TryGetLatestPayload(out var payload, out int version))
+        {
+            return;
+        }
+
+        if (payload == null || version == lastPayloadVersion)
+        {
+            return;
+        }
+
+        lastPayloadVersion = version;
+        ProcessPayload(payload);
+    }
+
+    private void ProcessPayload(MyListener.PosePayload payload)
+    {
         Vector3[] positions = payload.BodyWorld != null && payload.BodyWorld.Length > 0
             ? payload.BodyWorld
             : payload.BodyImage;

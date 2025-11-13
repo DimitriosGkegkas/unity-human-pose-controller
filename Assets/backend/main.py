@@ -9,6 +9,7 @@ from pose_formatter import PoseFormatter
 from pose_sender import PoseSender
 from pose_visualizer import PoseVisualizer
 from arm_rotation_calculator import ArmRotationCalculator
+from pprint import pprint
 
 
 def main() -> None:

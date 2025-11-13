@@ -61,9 +61,23 @@ class PoseFormatter:
         for state in hand_states:
             x, y, z = state.position
             gesture = state.gesture or "none"
-            payload.append(
-                f"{state.handedness}:x={x:.1f},y={y:.1f},dir={state.direction},gesture={gesture}"
-            )
+            parts = [
+                f"x={x:.1f}",
+                f"y={y:.1f}",
+                f"dir={state.direction}",
+                f"gesture={gesture}",
+            ]
+            if state.palm_normal is not None:
+                nx, ny, nz = state.palm_normal
+                parts.extend(
+                    [
+                        f"nx={nx:.3f}",
+                        f"ny={ny:.3f}",
+                        f"nz={nz:.3f}",
+                    ]
+                )
+
+            payload.append(f"{state.handedness}:" + ",".join(parts))
 
         return "hand_states:" + "|".join(payload)
 

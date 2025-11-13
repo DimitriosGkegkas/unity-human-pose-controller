@@ -15,6 +15,7 @@ class HandState:
     position: HandPosition3D   # (X,Y,Z) in meters
     direction: str             # up/down/left/right/forward/back/none
     gesture: Optional[str] = None
+    palm_normal: Optional[HandPosition3D] = None
 
 
 class HandMotionAnalyzer:
@@ -66,6 +67,9 @@ class HandMotionAnalyzer:
 
             pos = (X, Y, Z)
 
+            # 3b) Palm surface normal
+            normal = self._compute_palm_normal(landmarks_px, depth_m)
+
             # 4) EMA smoothing
             prev = self._smoothed.get(handedness, pos)
             sx = prev[0] + self._alpha * (X - prev[0])
@@ -80,7 +84,7 @@ class HandMotionAnalyzer:
 
             direction = self._compute_direction(hist)
 
-            states.append(HandState(handedness, smoothed, direction, gesture))
+            states.append(HandState(handedness, smoothed, direction, gesture, normal))
 
         return states
 
@@ -136,3 +140,47 @@ class HandMotionAnalyzer:
             direction += ("forward" if dz < 0 else "back")
 
         return direction
+
+    def _compute_palm_normal(self, landmarks_px, depth_m) -> Optional[HandPosition3D]:
+        anchor_idx = 0  # wrist
+        primary_idx = 5  # index MCP
+        secondary_indices = [13, 17]  # prefer ring MCP, fallback to pinky MCP
+
+        anchor_uv = landmarks_px[anchor_idx]
+        primary_uv = landmarks_px[primary_idx]
+
+        anchor_3d = self._project_landmark(anchor_uv, depth_m)
+        primary_3d = self._project_landmark(primary_uv, depth_m)
+
+        if anchor_3d is None or primary_3d is None:
+            return None
+
+        for secondary_idx in secondary_indices:
+            secondary_uv = landmarks_px[secondary_idx]
+            secondary_3d = self._project_landmark(secondary_uv, depth_m)
+            if secondary_3d is None:
+                continue
+
+            v1 = np.subtract(primary_3d, anchor_3d)
+            v2 = np.subtract(secondary_3d, anchor_3d)
+            normal = np.cross(v1, v2)
+            norm = np.linalg.norm(normal)
+
+            if not np.isfinite(norm) or norm == 0:
+                continue
+
+            normal = normal / norm
+
+            if normal[2] < 0:
+                normal = -normal
+
+            return tuple(float(component) for component in normal)
+
+        return None
+
+    def _project_landmark(self, uv: Tuple[float, float], depth_m) -> Optional[HandPosition3D]:
+        u, v = uv
+        z = self._sample_depth(depth_m, u, v)
+        if not np.isfinite(z) or z <= 0:
+            return None
+        return self._backproject(u, v, z)

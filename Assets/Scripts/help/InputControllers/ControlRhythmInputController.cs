@@ -12,7 +12,7 @@ namespace InputControllers
         private static readonly Dictionary<string, int> DirectionTotals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private static readonly object payloadSync = new object();
         private static bool isSubscribed;
-        private static MyListener.PosePayload latestPayload;
+        private static Dictionary<string, MyListener.HandStateData> latestHandStates;
 
         private static readonly (string Name, string[] Sequence)[] RhythmPatterns =
         {
@@ -32,15 +32,14 @@ namespace InputControllers
         {
             EnsureSubscribed();
 
-            var payload = GetLatestPayload();
-            if (payload?.HandStates == null ||
-                payload.HandStates.Count == 0)
+            var handStates = GetLatestHandStates();
+            if (handStates == null || handStates.Count == 0)
             {
                 CurrentRhythm = null;
                 return false;
             }
 
-            if (!TryGetRightHandDirection(payload.HandStates, out var direction))
+            if (!TryGetRightHandDirection(handStates, out var direction))
             {
                 CurrentRhythm = null;
                 return false;
@@ -195,23 +194,27 @@ namespace InputControllers
                 return;
             }
 
-            MyListener.OnNewPosePayload += HandlePayload;
+            MyListener.OnHandStatesUpdated += HandleHandStates;
             isSubscribed = true;
         }
 
-        private static void HandlePayload(MyListener.PosePayload payload)
+        private static void HandleHandStates(Dictionary<string, MyListener.HandStateData> handStates)
         {
             lock (payloadSync)
             {
-                latestPayload = payload;
+                latestHandStates = handStates != null
+                    ? new Dictionary<string, MyListener.HandStateData>(handStates)
+                    : null;
             }
         }
 
-        private static MyListener.PosePayload GetLatestPayload()
+        private static Dictionary<string, MyListener.HandStateData> GetLatestHandStates()
         {
             lock (payloadSync)
             {
-                return latestPayload;
+                return latestHandStates != null
+                    ? new Dictionary<string, MyListener.HandStateData>(latestHandStates)
+                    : null;
             }
         }
     }

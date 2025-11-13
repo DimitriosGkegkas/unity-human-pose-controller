@@ -43,22 +43,17 @@ public class RigPositionReceiver : MonoBehaviour
 
     void OnEnable()
     {
-        MyListener.OnNewPosePayload += HandlePayload;
+        MyListener.OnArmSegmentsUpdated += HandleArmSegments;
     }
 
     void OnDisable()
     {
-        MyListener.OnNewPosePayload -= HandlePayload;
+        MyListener.OnArmSegmentsUpdated -= HandleArmSegments;
     }
 
-    void HandlePayload(MyListener.PosePayload payload)
+    private void HandleArmSegments(Dictionary<string, MyListener.ArmSegmentData> armSegments)
     {
-        if (payload?.ArmSegments == null || payload.ArmSegments.Count == 0)
-        {
-            return;
-        }
-
-        ApplyRotationsToRig(payload.ArmSegments);
+        ApplyRotationsToRig(armSegments);
     }
 
     public void ApplyRotationsToRig(Dictionary<string, MyListener.ArmSegmentData> armSegments)

@@ -77,8 +77,8 @@ class BodyGestureRecognizer:
         ):
             return "insufficient_landmarks"
 
-        left_hand_up = left_wrist_coords[1] < left_shoulder_coords[1]
-        right_hand_up = right_wrist_coords[1] < right_shoulder_coords[1]
+        left_hand_up = left_wrist_coords[1] > left_shoulder_coords[1]
+        right_hand_up = right_wrist_coords[1] > right_shoulder_coords[1]
 
         if left_hand_up and right_hand_up:
             return "both_hands_up"

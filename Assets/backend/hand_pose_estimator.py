@@ -68,7 +68,10 @@ class HandPoseEstimator:
             return []
 
         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_rgb)
+        mp_image = mp.Image(
+            image_format=mp.ImageFormat.SRGB,
+            data=np.ascontiguousarray(image_rgb),
+        )
         result = self._run_recognizer(mp_image, timestamp_ms)
 
         # If no hands → return empty list

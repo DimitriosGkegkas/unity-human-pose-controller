@@ -7,19 +7,15 @@ namespace InputControllers
         private const string RaisedHandsGesture = "both_hands_up";
         private static readonly object payloadSync = new object();
         private static bool isSubscribed;
-        private static MyListener.PosePayload latestPayload;
+        private static string latestGesture;
 
         public static bool HasRaisedHand()
         {
             EnsureSubscribed();
 
-            var payload = GetLatestPayload();
-            if (payload == null)
-            {
-                return false;
-            }
-
-            return string.Equals(payload.Gesture, RaisedHandsGesture, StringComparison.OrdinalIgnoreCase);
+            string gesture = GetLatestGesture();
+            return !string.IsNullOrEmpty(gesture) &&
+                   string.Equals(gesture, RaisedHandsGesture, StringComparison.OrdinalIgnoreCase);
         }
 
         private static void EnsureSubscribed()
@@ -29,23 +25,23 @@ namespace InputControllers
                 return;
             }
 
-            MyListener.OnNewPosePayload += HandlePayload;
+            MyListener.OnGestureUpdated += HandleGesture;
             isSubscribed = true;
         }
 
-        private static void HandlePayload(MyListener.PosePayload payload)
+        private static void HandleGesture(string gesture)
         {
             lock (payloadSync)
             {
-                latestPayload = payload;
+                latestGesture = gesture;
             }
         }
 
-        private static MyListener.PosePayload GetLatestPayload()
+        private static string GetLatestGesture()
         {
             lock (payloadSync)
             {
-                return latestPayload;
+                return latestGesture;
             }
         }
     }

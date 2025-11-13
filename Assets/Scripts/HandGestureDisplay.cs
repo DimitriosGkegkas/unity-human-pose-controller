@@ -15,6 +15,8 @@ public class HandGestureDisplay : MonoBehaviour
     public Color neutralColor = new Color(1f, 1f, 1f, 0.3f);
 
     private readonly StringBuilder builder = new StringBuilder(256);
+    private Dictionary<string, MyListener.HandStateData> latestHandStates;
+    private string latestGesture = string.Empty;
 
     void Start()
     {
@@ -28,46 +30,43 @@ public class HandGestureDisplay : MonoBehaviour
 
     void OnEnable()
     {
-        MyListener.OnNewPosePayload += HandlePayload;
+        MyListener.OnHandStatesUpdated += HandleHandStates;
+        MyListener.OnGestureUpdated += HandleGesture;
     }
 
     void OnDisable()
     {
-        MyListener.OnNewPosePayload -= HandlePayload;
+        MyListener.OnHandStatesUpdated -= HandleHandStates;
+        MyListener.OnGestureUpdated -= HandleGesture;
     }
 
-    private void HandlePayload(MyListener.PosePayload payload)
+    private void HandleHandStates(Dictionary<string, MyListener.HandStateData> handStates)
     {
-        if (payload == null)
-        {
-            UpdateDisplayWaiting("Waiting for gesture data...");
-            return;
-        }
+        latestHandStates = handStates != null
+            ? new Dictionary<string, MyListener.HandStateData>(handStates)
+            : null;
 
-        UpdateDisplay(payload);
+        RenderDisplay();
     }
 
-    private void UpdateDisplay(MyListener.PosePayload payload)
+    private void HandleGesture(string gesture)
     {
-        builder.Clear();
+        latestGesture = gesture ?? string.Empty;
+        RenderDisplay();
+    }
 
-        Dictionary<string, MyListener.HandStateData> handStates = payload.HandStates;
+    private void RenderDisplay()
+    {
+        var handStates = latestHandStates;
         bool hasHandStates = handStates != null && handStates.Count > 0;
 
         if (!hasHandStates)
         {
-            builder.AppendLine("No hand states received");
-            if (payload.Metrics.HandLandmarkCount > 0)
-            {
-                builder.AppendLine($"Hand landmarks detected: {payload.Metrics.HandLandmarkCount}");
-            }
-
-            detailsText.text = builder.ToString();
-            titleText.text = string.IsNullOrEmpty(payload.Gesture) ? "Hand Gestures" : payload.Gesture;
-            backgroundPanel.color = neutralColor;
+            UpdateDisplayWaiting("Waiting for hand state data...");
             return;
         }
 
+        builder.Clear();
         bool anyPointing = false;
 
         foreach (var entry in handStates)
@@ -88,16 +87,27 @@ public class HandGestureDisplay : MonoBehaviour
             }
         }
 
-        detailsText.text = builder.ToString();
-        titleText.text = string.IsNullOrEmpty(payload.Gesture) ? "Hand Gestures" : payload.Gesture;
-        backgroundPanel.color = anyPointing ? pointingColor : neutralColor;
+        if (detailsText != null)
+        {
+            detailsText.text = builder.ToString();
+        }
+
+        if (titleText != null)
+        {
+            titleText.text = string.IsNullOrEmpty(latestGesture) ? "Hand Gestures" : latestGesture;
+        }
+
+        if (backgroundPanel != null)
+        {
+            backgroundPanel.color = anyPointing ? pointingColor : neutralColor;
+        }
     }
 
     private void UpdateDisplayWaiting(string message = "Waiting for gesture data...")
     {
         if (titleText != null)
         {
-            titleText.text = "Hand Gestures";
+            titleText.text = string.IsNullOrEmpty(latestGesture) ? "Hand Gestures" : latestGesture;
         }
 
         if (detailsText != null)
