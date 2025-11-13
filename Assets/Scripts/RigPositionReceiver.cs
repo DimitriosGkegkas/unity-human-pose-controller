@@ -41,14 +41,19 @@ public class RigPositionReceiver : MonoBehaviour
         }
     }
 
-    void Update()
+    void OnEnable()
     {
-        if (MyListener.Instance != null &&
-            MyListener.Instance.TryGetArmSegments(out var armSegments) &&
-            armSegments != null && armSegments.Count > 0)
-        {
-            ApplyRotationsToRig(armSegments);
-        }
+        MyListener.OnArmSegmentsUpdated += HandleArmSegments;
+    }
+
+    void OnDisable()
+    {
+        MyListener.OnArmSegmentsUpdated -= HandleArmSegments;
+    }
+
+    private void HandleArmSegments(Dictionary<string, MyListener.ArmSegmentData> armSegments)
+    {
+        ApplyRotationsToRig(armSegments);
     }
 
     public void ApplyRotationsToRig(Dictionary<string, MyListener.ArmSegmentData> armSegments)

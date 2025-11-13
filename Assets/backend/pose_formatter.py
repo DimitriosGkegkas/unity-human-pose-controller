@@ -16,15 +16,12 @@ class PoseFormatter:
         frame_shape,
         body_result,
         hand_result,
-        metrics,
         body_gesture: str,
         arm_segments: Optional[List[ArmSegmentRotation]] = None,
         hand_states: Optional[List[HandState]] = None,
     ) -> str:
         body_section = self._format_body(frame_shape, body_result)
-        hand_section = self._format_hands(frame_shape, hand_result)
         hand_state_section = self._format_hand_states(hand_states)
-        metrics_section = f"metrics:body={metrics.body_landmark_count},hands={metrics.hand_landmark_count}"
         gesture_section = f"gesture:{body_gesture}"
         arm_section = self._format_arm_segments(arm_segments)
 
@@ -32,9 +29,7 @@ class PoseFormatter:
             part
             for part in [
                 body_section,
-                hand_section,
                 hand_state_section,
-                metrics_section,
                 gesture_section,
                 arm_section,
             ]
@@ -48,39 +43,15 @@ class PoseFormatter:
 
         height, width = frame_shape[:2]
 
-        if body_result.world_landmarks:
+        landmarks_world = getattr(body_result, "landmarks_world", None)
+        if landmarks_world is not None and landmarks_world.size:
             serialized = ";".join(
-                f"{idx}:{landmark.x:.5f},{landmark.y:.5f},{landmark.z:.5f}"
-                for idx, landmark in enumerate(body_result.world_landmarks.landmark)
+                f"{idx}:{landmarks_world[idx,0]:.5f},{landmarks_world[idx,1]:.5f},{landmarks_world[idx,2]:.5f}"
+                for idx, landmark in enumerate(body_result.landmarks_world)
             )
             return f"body_world:{serialized}"
 
-        if body_result.landmarks:
-            serialized = ";".join(
-                f"{idx}:{landmark.x * width:.1f},{landmark.y * height:.1f},{0.0:.1f}"
-                for idx, landmark in enumerate(body_result.landmarks.landmark)
-            )
-            return f"body_image:{serialized}"
-
         return ""
-
-    def _format_hands(self, frame_shape, hand_result) -> str:
-        if not hand_result or not hand_result.normalized:
-            return ""
-
-        height, width = frame_shape[:2]
-        hands_payload: List[str] = []
-        for hand_idx, hand_landmarks in enumerate(hand_result.normalized):
-            serialized = ";".join(
-                f"{idx}:{landmark.x * width:.1f},{landmark.y * height:.1f},{landmark.z:.5f}"
-                for idx, landmark in enumerate(hand_landmarks.landmark)
-            )
-            hands_payload.append(f"hand{hand_idx}:{serialized}")
-
-        if not hands_payload:
-            return ""
-
-        return "hands:" + "|".join(hands_payload)
 
     def _format_hand_states(self, hand_states: Optional[List[HandState]]) -> str:
         if not hand_states:
@@ -88,12 +59,25 @@ class PoseFormatter:
 
         payload: List[str] = []
         for state in hand_states:
-            x, y = state.position
-            pointing = 1 if state.is_pointing else 0
+            x, y, z = state.position
             gesture = state.gesture or "none"
-            payload.append(
-                f"{state.handedness}:x={x:.1f},y={y:.1f},dir={state.direction},pointing={pointing},gesture={gesture}"
-            )
+            parts = [
+                f"x={x:.1f}",
+                f"y={y:.1f}",
+                f"dir={state.direction}",
+                f"gesture={gesture}",
+            ]
+            if state.palm_normal is not None:
+                nx, ny, nz = state.palm_normal
+                parts.extend(
+                    [
+                        f"nx={nx:.3f}",
+                        f"ny={ny:.3f}",
+                        f"nz={nz:.3f}",
+                    ]
+                )
+
+            payload.append(f"{state.handedness}:" + ",".join(parts))
 
         return "hand_states:" + "|".join(payload)
 
