@@ -20685,7 +20685,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   runOnStart: 1
   pythonBinary: python
-  scriptAssetPath: Assets/backend/main.py
+  scriptAssetPath: 
   scriptAsset: {fileID: 102900000, guid: 773aa86796200984c8d7ed2e2318fa28, type: 3}
 --- !u!4 &1179478383 stripped
 Transform:

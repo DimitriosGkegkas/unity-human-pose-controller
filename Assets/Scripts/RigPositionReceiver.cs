@@ -82,7 +82,8 @@ public class RigPositionReceiver : MonoBehaviour
 
 
             Quaternion targetRotation = new Quaternion();
-            Vector3 targetDirectionParentLocal = mapping.boneTransform.parent.InverseTransformVector(segment.Direction);
+            Vector3 rotatedDirection = Quaternion.AngleAxis(180f, Vector3.up) * segment.Direction;
+            Vector3 targetDirectionParentLocal = mapping.boneTransform.parent.InverseTransformVector(rotatedDirection);
             targetRotation.SetFromToRotation(new Vector3(0, 1, 0), targetDirectionParentLocal);
 
             if (enableSmoothing && currentRotations.TryGetValue(mapping.boneTransform, out var current))

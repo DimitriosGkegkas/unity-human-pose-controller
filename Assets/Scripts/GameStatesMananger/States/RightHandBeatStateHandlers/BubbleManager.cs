@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class BubbleManager : MonoBehaviour
 {
@@ -9,14 +10,22 @@ public class BubbleManager : MonoBehaviour
     [SerializeField] private Bubble bubblePrefab;
     [SerializeField] private Transform spawnRoot;
 
+    [Header("Path Anchors")]
+    [SerializeField] private Transform pathStart;
+    [SerializeField] private Transform pathEnd;
+
     [Header("Positioning")]
-    [SerializeField] private float startZ = 0.5f;
-    [SerializeField] private float spacingZ = 0.5f;
-    [SerializeField] private float missZ = 0f;
+    [FormerlySerializedAs("startZ")]
+    [SerializeField] private float startDistance = 0.5f;
+    [FormerlySerializedAs("spacingZ")]
+    [SerializeField] private float spacingDistance = 0.5f;
+    [FormerlySerializedAs("missZ")]
+    [SerializeField] private float missDistance = 0f;
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 1f;
-    [SerializeField] private float targetZ = 0.2f;
+    [FormerlySerializedAs("targetZ")]
+    [SerializeField] private float targetDistance = 0.2f;
     [SerializeField, Range(0.001f, 0.1f)] private float maxProgressStep = 1f / 30f;
 
     [Header("Resolution Effects")]
@@ -53,9 +62,13 @@ public class BubbleManager : MonoBehaviour
     {
         StopProgressIfRunning();
         var front = GetFrontmostBubble();
-        if (front != null && front.transform.position.z <= targetZ)
+        if (front != null)
         {
-            ResolveBubble(front, BubbleResolution.Miss);
+            var frame = BuildPathFrame();
+            if (frame.DistanceToEnd(front.transform.position) <= targetDistance)
+            {
+                ResolveBubble(front, BubbleResolution.Miss);
+            }
         }
         progressRoutine = StartCoroutine(CoProgressToNextBeat());
     }
@@ -93,19 +106,22 @@ public class BubbleManager : MonoBehaviour
 
     public void AddBubbles(IList<Vector2> xyList)
     {
+        var frame = BuildPathFrame();
+
         int startIndex = bubbles.Count;
         Bubble lastBubble = GetBackmostBubble();
-        float lastZ = lastBubble != null ? lastBubble.transform.position.z : startZ - spacingZ;
+        float lastDistance = lastBubble != null
+            ? frame.DistanceFromStart(lastBubble.transform.position)
+            : startDistance - spacingDistance;
 
         for (int i = 0; i < xyList.Count; i++)
         {
             Vector2 xy = xyList[i];
-            lastZ += spacingZ;
-            float z = lastZ;
+            lastDistance += spacingDistance;
 
             var bubble = Instantiate(
                 bubblePrefab,
-                new Vector3(xy.x, xy.y, z),
+                frame.GetPosition(lastDistance, xy),
                 Quaternion.identity,
                 spawnRoot
             );
@@ -137,6 +153,7 @@ public class BubbleManager : MonoBehaviour
 
         while (true)
         {
+            var frame = BuildPathFrame();
             bool reachedTarget = false;
             float frameDelta = Mathf.Min(Time.deltaTime, maxProgressStep);
             if (frameDelta <= Mathf.Epsilon)
@@ -144,11 +161,11 @@ public class BubbleManager : MonoBehaviour
                 yield return null;
                 continue;
             }
-            MoveBubbles(frameDelta);
+            MoveBubbles(frameDelta, frame);
 
             // Check if the first bubble reached the targetZ plane
             var first = GetFrontmostBubble();
-            if (first != null && first.transform.position.z <= targetZ)
+            if (first != null && frame.DistanceToEnd(first.transform.position) <= targetDistance)
                 reachedTarget = true;
 
             if (reachedTarget)
@@ -163,19 +180,20 @@ public class BubbleManager : MonoBehaviour
     {
         while (bubbles.Count > 0)
         {
+            var frame = BuildPathFrame();
             float frameDelta = Mathf.Min(Time.deltaTime, maxProgressStep);
             if (frameDelta <= Mathf.Epsilon)
             {
                 yield return null;
                 continue;
             }
-            MoveBubbles(frameDelta);
+            MoveBubbles(frameDelta, frame);
             yield return null;
         }
         progressRoutine = null;
     }
 
-    private void MoveBubbles(float deltaTime)
+    private void MoveBubbles(float deltaTime, PathFrame frame)
     {
         float dz = moveSpeed * deltaTime;
 
@@ -189,12 +207,12 @@ public class BubbleManager : MonoBehaviour
             }
 
             Vector3 pos = b.transform.position;
-            pos.z -= dz;
+            pos += frame.Direction * dz;
             b.transform.position = pos;
 
-            if (pos.z <= missZ)
+            if (frame.DistanceToEnd(pos) <= missDistance)
             {
-                Debug.Log($"[BubbleManager] Bubble {b.SequenceIndex} missed (z={pos.z:F2})");
+                Debug.Log($"[BubbleManager] Bubble {b.SequenceIndex} missed (distanceToEnd={frame.DistanceToEnd(pos):F2})");
                 ResolveBubble(b, BubbleResolution.Miss);
             }
         }
@@ -207,16 +225,17 @@ public class BubbleManager : MonoBehaviour
 
     private Bubble GetFrontmostBubble()
     {
+        var frame = BuildPathFrame();
         Bubble front = null;
-        float minZ = float.MaxValue;
+        float minDistance = float.MaxValue;
 
         foreach (var b in bubbles)
         {
             if (b == null) continue;
-            float z = b.transform.position.z;
-            if (z < minZ)
+            float distance = frame.DistanceToEnd(b.transform.position);
+            if (distance < minDistance)
             {
-                minZ = z;
+                minDistance = distance;
                 front = b;
             }
         }
@@ -225,16 +244,17 @@ public class BubbleManager : MonoBehaviour
 
     private Bubble GetBackmostBubble()
     {
+        var frame = BuildPathFrame();
         Bubble back = null;
-        float maxZ = float.MinValue;
+        float maxDistance = float.MinValue;
 
         foreach (var b in bubbles)
         {
             if (b == null) continue;
-            float z = b.transform.position.z;
-            if (z > maxZ)
+            float distance = frame.DistanceFromStart(b.transform.position);
+            if (distance > maxDistance)
             {
-                maxZ = z;
+                maxDistance = distance;
                 back = b;
             }
         }
@@ -269,11 +289,94 @@ public class BubbleManager : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        Vector3 p = transform.position;
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(p + Vector3.forward * missZ + Vector3.left, p + Vector3.forward * missZ + Vector3.right);
+        var frame = BuildPathFrame();
+        float planeHalf = 0.25f;
 
+        Vector3 start = frame.Origin;
+        Vector3 end = frame.Origin + frame.Direction * Mathf.Max(frame.Length, 0.5f);
+
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(start, end);
+
+        Vector3 targetCenter = frame.Origin + frame.Direction * Mathf.Max(frame.Length - targetDistance, 0f);
         Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(p + Vector3.forward * targetZ + Vector3.left, p + Vector3.forward * targetZ + Vector3.right);
+        Gizmos.DrawLine(targetCenter - frame.Right * planeHalf, targetCenter + frame.Right * planeHalf);
+        Gizmos.DrawLine(targetCenter - frame.Up * planeHalf, targetCenter + frame.Up * planeHalf);
+
+        Vector3 missCenter = frame.Origin + frame.Direction * Mathf.Max(frame.Length - missDistance, 0f);
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(missCenter - frame.Right * planeHalf, missCenter + frame.Right * planeHalf);
+        Gizmos.DrawLine(missCenter - frame.Up * planeHalf, missCenter + frame.Up * planeHalf);
+    }
+
+    private PathFrame BuildPathFrame()
+    {
+        Vector3 origin = pathStart != null ? pathStart.position : transform.position;
+        Vector3 end = pathEnd != null ? pathEnd.position : origin + transform.forward;
+
+        Vector3 direction = end - origin;
+        if (direction.sqrMagnitude <= Mathf.Epsilon)
+        {
+            direction = transform.forward;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                direction = Vector3.forward;
+            }
+        }
+        direction = direction.normalized;
+
+        float length = Vector3.Dot(end - origin, direction);
+
+        Vector3 referenceUp = pathStart != null ? pathStart.up : transform.up;
+        if (referenceUp.sqrMagnitude <= Mathf.Epsilon)
+        {
+            referenceUp = Vector3.up;
+        }
+
+        Vector3 right = Vector3.Cross(referenceUp, direction);
+        if (right.sqrMagnitude <= Mathf.Epsilon)
+        {
+            right = Vector3.Cross(Vector3.up, direction);
+            if (right.sqrMagnitude <= Mathf.Epsilon)
+            {
+                right = Vector3.Cross(Vector3.right, direction);
+            }
+        }
+        right = right.normalized;
+
+        Vector3 up = Vector3.Cross(direction, right).normalized;
+
+        return new PathFrame
+        {
+            Origin = origin,
+            Direction = direction,
+            Right = right,
+            Up = up,
+            Length = length
+        };
+    }
+
+    private struct PathFrame
+    {
+        public Vector3 Origin;
+        public Vector3 Direction;
+        public Vector3 Right;
+        public Vector3 Up;
+        public float Length;
+
+        public float DistanceFromStart(Vector3 position)
+        {
+            return Vector3.Dot(position - Origin, Direction);
+        }
+
+        public float DistanceToEnd(Vector3 position)
+        {
+            return Length - DistanceFromStart(position);
+        }
+
+        public Vector3 GetPosition(float distance, Vector2 offset)
+        {
+            return Origin + Direction * distance + Right * offset.x + Up * offset.y;
+        }
     }
 }

@@ -103,6 +103,7 @@ public class MaestroGameManager : MonoBehaviour
                 continue;
             }
 
+            Debug.Log($"[MaestroGameManager] Building state list: {behaviour.name}");
             if (behaviour is IGameState state)
             {
                 states.Add(state);
